@@ -35,7 +35,6 @@ class VerifyOtp(APIView):
             email = serializer.validated_data['email']
             otp = serializer.validated_data['otp']
 
-            # Safely get user
             try:
                 user = CustomUser.objects.get(email=email)
             except CustomUser.DoesNotExist:
@@ -44,14 +43,12 @@ class VerifyOtp(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Compare OTP stored on user model
             if str(user.otp) != str(otp):
                 return Response(
                     {'message_response': 'OTP is incorrect'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Mark as verified
             user.email_verified = True
             user.save()
 
