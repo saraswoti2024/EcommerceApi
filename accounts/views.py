@@ -2,11 +2,15 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView
 from accounts.models import CustomUser
-from .serializers import RegistrationSerializer,VerifySerializer
+from .serializers import RegistrationSerializer,VerifySerializer,CustomTokenSerializer
 from rest_framework import permissions,status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from accounts.emails import opt_email
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 class RegisterView(APIView):
     def post(self,request):
@@ -48,12 +52,21 @@ class VerifyOtp(APIView):
                     {'message_response': 'OTP is incorrect'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-
             user.email_verified = True
             user.save()
-
             return Response(
                 {'message_response': 'Verified email'},
                 status=status.HTTP_200_OK
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CustomToken(TokenObtainPairView):
+    serializer_class = CustomTokenSerializer
+
+
+class Profile(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self,request):
+        user_name = request.user.first_name
+        return Response({'data': f'welcome {user_name}!'})
+    
