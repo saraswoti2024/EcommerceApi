@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'phonenumber_field',
     'accounts',
+    'message',
+    'products',
 ]
 
 MIDDLEWARE = [
