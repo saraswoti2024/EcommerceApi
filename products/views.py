@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.generics import ListAPIView,CreateAPIView,RetrieveAPIView,UpdateAPIView,DestroyAPIView
-from .models import Product,CartItem,WishlistItem,ProductImage
-from .serializers import ProductSerializer,CartSerializer,WishSerializer,ProductImageSerializer
+from .models import Product,CartItem,WishlistItem,ProductImage,ProductReview
+from .serializers import ProductSerializer,CartSerializer,WishSerializer,ProductImageSerializer,ProductReviewSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
@@ -145,9 +145,9 @@ class Wishlist(APIView):
     
     def get(self,request):
         product = WishlistItem.objects.filter(user=request.user)
+        paginator_value = Paginator(product , 5)
         total_items = WishlistItem.objects.filter(user=request.user).count()
         page_number = request.GET.get('page', 1)
-        paginator_value = Paginator(product , 5)
         serializers = WishSerializer(paginator_value.page(page_number),many=True)
         return Response({
             "status": "success",
@@ -175,3 +175,32 @@ class Wishlist(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+class ProductReviewView(APIView):
+    def post(self,request):
+        try:
+            product_id = request.data.get('product_id')
+            productr = Product.objects.get(id=product_id)
+            serializer = ProductReviewSerializer(data = request.data)
+            if serializer.is_valid():
+                serializer.save(user=request.user,product=productr)
+                return Response(serializer.data,status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
+    
+    def get(self,request):           
+        product_id = request.query_params.get('product_id')
+        review = ProductReview.objects.filter(product__id=product_id)
+        serializer = ProductReviewSerializer(review,many=True)
+        return Response(serializer.data)
+    
+    # def patch(self,request):
+    #     product_id = request.query_params.get('product_id')
+    #     review = ProductReview.objects.get(product__id=product_id,user=request.user)       
+    #     serializer = ProductReviewSerializer(review,data = request.data,partial=True)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response(serializer.data)
+
+    

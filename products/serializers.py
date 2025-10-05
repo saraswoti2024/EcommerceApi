@@ -21,3 +21,11 @@ class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ["color","product"]
+
+class ProductReviewSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    product = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = ProductReview
+        fields = ["id", "user", "product", "comments", "ratings"]

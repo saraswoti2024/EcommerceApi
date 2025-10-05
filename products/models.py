@@ -51,3 +51,12 @@ class WishlistItem(models.Model):
 
     class Meta:
         unique_together = ("user", "product")
+
+class ProductReview(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_review")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE,related_name="product_review")
+    comments = models.TextField()
+    ratings = models.DecimalField(max_digits=6,decimal_places=1)
+    
+    class Meta:
+        unique_together = ("user", "product")
