@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.generics import ListAPIView,CreateAPIView,RetrieveAPIView,UpdateAPIView,DestroyAPIView
-from .models import Product,CartItem,WishlistItem
-from .serializers import ProductSerializer,CartSerializer,WishSerializer
+from .models import Product,CartItem,WishlistItem,ProductImage
+from .serializers import ProductSerializer,CartSerializer,WishSerializer,ProductImageSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
@@ -48,7 +48,12 @@ class ProductViewDetail(APIView):
     def get(self,request,id):
         try:
             value = Product.objects.get(id=id)
-            serializers = ProductSerializer(value)
+            if request.query_params.get('color'):
+                color = request.query_params.get('color')
+                product_color = ProductImage.objects.filter(color=color,product__id = value.id)
+                serializers = ProductImageSerializer(product_color,many=True)
+            else:
+                serializers = ProductSerializer(value)
             return Response(serializers.data,status = status.HTTP_200_OK)
         except Exception as e:
             return Response(str(e),status=status.HTTP_400_BAD_REQUEST)

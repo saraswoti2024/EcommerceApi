@@ -1,4 +1,4 @@
-from .models import Product,CartItem,WishlistItem
+from .models import *
 from rest_framework import serializers
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -16,3 +16,8 @@ class WishSerializer(serializers.ModelSerializer):
     class Meta:
         model = WishlistItem
         fields = ["id", "product"]
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ["color","product"]
