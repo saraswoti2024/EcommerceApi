@@ -45,3 +45,18 @@ class UserChoice(models.Model):
 
     def __str__(self):
         return f"{self.user.first_name} - {self.product.name}"
+
+class CartItem(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="cart_items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ("user", "product")
+
+class WishlistItem(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="wishlist_items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("user", "product")
