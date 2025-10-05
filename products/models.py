@@ -36,15 +36,6 @@ class ProductImage(models.Model):
         return f"{self.product.name} - img/vid"
 
 
-class UserChoice(models.Model):
-    user = models.ForeignKey(CustomUser,on_delete=models.CASCADE,related_name="user_choice") 
-    product = models.ForeignKey(Product,on_delete=models.CASCADE,related_name="product_choice")
-    is_wishlist = models.BooleanField(default=False)
-    is_fav = models.BooleanField(default=False)
-    add_to_cart = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"{self.user.first_name} - {self.product.name}"
 
 class CartItem(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="cart_items")

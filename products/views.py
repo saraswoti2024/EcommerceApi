@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.generics import ListAPIView,CreateAPIView,RetrieveAPIView,UpdateAPIView,DestroyAPIView
-from .models import Product,UserChoice,CartItem,WishlistItem
-from .serializers import ProductSerializer,UserSerializer,CartSerializer,WishSerializer
+from .models import Product,CartItem,WishlistItem
+from .serializers import ProductSerializer,CartSerializer,WishSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
@@ -107,5 +107,53 @@ class RemoveCart(APIView):
             )
         except CartItem.DoesNotExist:
             return Response({"status": "error", "message": "Item not in cart"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+class Wishlist(APIView):
+    def post(self,request):
+        product_id = request.data.get('product_id')
+        product = get_object_or_404(Product,id=product_id)
+        wish_item , created = WishlistItem.objects.get_or_create(
+            user = request.user,
+            product = product,
+        )
+        serializer = WishSerializer(wish_item)
+        total_items = WishlistItem.objects.filter(user=request.user).count()
+
+        return Response({
+            "status": "success",
+            "message": "wish items",
+            "wish_item": serializer.data,
+            "cart_count": total_items
+        }, status=status.HTTP_201_CREATED)
+    
+    def get(self,request):
+        product = WishlistItem.objects.filter(user=request.user)
+        serializer = WishSerializer(product,many=True)
+        total_items = WishlistItem.objects.filter(user=request.user).count()
+        return Response({
+            "status": "success",
+            "message": serializer.data,
+            "wishlist_count": total_items
+        }, status=status.HTTP_201_CREATED) 
+    
+    def delete(self,request):
+        product_id = request.data.get('product_id')
+        product = get_object_or_404(Product,id=product_id)
+        try:
+            wish_item = WishlistItem.objects.get(user=request.user,product=product)
+            wish_item.delete()
+            wishlist_count = WishlistItem.objects.filter(user=request.user).count()
+            return Response(
+                {
+                    "status": "success",
+                    "message": "Item removed from wishlist",
+                    "cart_count": wishlist_count,
+                },
+                status=status.HTTP_200_OK
+            )
+        except WishlistItem.DoesNotExist:
+            return Response({"status": "error", "message": "Item not in wishlist"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
