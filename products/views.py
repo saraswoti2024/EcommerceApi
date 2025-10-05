@@ -25,22 +25,30 @@ class ProductView(APIView):
     def get(self,request):
             try:
                 data = Product.objects.all()
+                total_products = Product.objects.all().count()
                 if request.query_params.get('category'):
                     category = request.query_params.get('category')
                     data = Product.objects.filter(category=category)
-                    
+                    total_products = Product.objects.filter(category=category).count()
+
                 if request.query_params.get('brand'):
                     brand = request.query_params.get('brand')
                     data_brand = data.filter(brand=brand)
+                    total_products = data.filter(brand=brand).count()
                 
                 if request.query_params.get('rating'):
                     rate = request.query_params.get('rating')
+                    total_products = data_brand.filter(rating=rate).count()
                     data = data_brand.filter(rating=rate)
 
                 page_number = request.GET.get('page', 1)
                 paginator_value = Paginator(data , 5)
                 serializers = ProductSerializer(paginator_value.page(page_number),many=True)
-                return Response(serializers.data,status=status.HTTP_200_OK)
+                
+                return Response(
+                    {'message':serializers.data,
+                    "total_products": total_products},
+                    status=status.HTTP_200_OK)
             except Exception as e:
                 return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
 
@@ -86,11 +94,13 @@ class Cart(APIView):
 
     def get(self,request):
         product = CartItem.objects.filter(user=request.user)
-        serializer = CartSerializer(product,many=True)
         total_items = CartItem.objects.filter(user=request.user).count()
+        page_number = request.GET.get('page', 1)
+        paginator_value = Paginator(product , 5)
+        serializers = CartSerializer(paginator_value.page(page_number),many=True)
         return Response({
             "status": "success",
-            "message": serializer.data,
+            "message": serializers.data,
             "cart_count": total_items
         }, status=status.HTTP_201_CREATED)       
 
@@ -135,11 +145,13 @@ class Wishlist(APIView):
     
     def get(self,request):
         product = WishlistItem.objects.filter(user=request.user)
-        serializer = WishSerializer(product,many=True)
         total_items = WishlistItem.objects.filter(user=request.user).count()
+        page_number = request.GET.get('page', 1)
+        paginator_value = Paginator(product , 5)
+        serializers = WishSerializer(paginator_value.page(page_number),many=True)
         return Response({
             "status": "success",
-            "message": serializer.data,
+            "message": serializers.data,
             "wishlist_count": total_items
         }, status=status.HTTP_201_CREATED) 
     
@@ -162,3 +174,4 @@ class Wishlist(APIView):
             return Response({"status": "error", "message": "Item not in wishlist"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
