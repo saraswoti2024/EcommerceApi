@@ -9,8 +9,10 @@ from rest_framework import permissions,status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 
+
 class ProductView(APIView):
 
+    #admin
     def post(self,request):
         try: 
             serializers = ProductSerializer(data = request.data)
@@ -21,6 +23,7 @@ class ProductView(APIView):
                 return Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
+
 
     def get(self,request):
             try:
@@ -51,6 +54,7 @@ class ProductView(APIView):
                     status=status.HTTP_200_OK)
             except Exception as e:
                 return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
+     
 
 class ProductViewDetail(APIView):
     def get(self,request,id):
@@ -65,7 +69,39 @@ class ProductViewDetail(APIView):
             return Response(serializers.data,status = status.HTTP_200_OK)
         except Exception as e:
             return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
- 
+
+    #admin
+    def patch(self,request,id):
+        try: 
+            product1 = Product.objects.get(id=id)
+            serializers = ProductSerializer(product1,data = request.data,partial=True)
+            if serializers.is_valid():
+                    serializers.save()
+                    return Response(serializers.data,status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
+
+
+    def delete(self,request,id):
+        try:
+            product1 = Product.objects.get(id=id)
+            product1.delete()
+            product_count = Product.objects.all().count()
+            return Response(
+                {
+                    "status": "success",
+                    "message": "product_deleted",
+                    "product_count": product_count
+                },
+                status=status.HTTP_200_OK
+            )
+        except Product.DoesNotExist:
+            return Response({"status": "error", "message": "Item not in cart"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
 
 class Cart(APIView):
     permission_classes = [IsAuthenticated] 
@@ -190,17 +226,17 @@ class ProductReviewView(APIView):
             return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
     
     def get(self,request):           
-        product_id = request.query_params.get('product_id')
+        product_id = request.data.get('product_id')
         review = ProductReview.objects.filter(product__id=product_id)
         serializer = ProductReviewSerializer(review,many=True)
         return Response(serializer.data)
     
-    # def patch(self,request):
-    #     product_id = request.query_params.get('product_id')
-    #     review = ProductReview.objects.get(product__id=product_id,user=request.user)       
-    #     serializer = ProductReviewSerializer(review,data = request.data,partial=True)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response(serializer.data)
+    def patch(self,request):
+        product_id = request.data.get('product_id')
+        review = ProductReview.objects.get(product__id=product_id,user=request.user)       
+        serializer = ProductReviewSerializer(review,data = request.data,partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
 
     
