@@ -69,3 +69,12 @@ class ProductReviewSerializer(serializers.ModelSerializer):
     
     def get_user(self,obj):
         return obj.user.first_name
+    
+    def validate(self, data):
+        """Ensure ratings are only provided for main reviews, not replies."""
+        reply = data.get('reply')
+        rating = data.get('ratings')
+
+        if reply and rating is not None:
+            raise serializers.ValidationError("Replies should not include ratings.")
+        return data

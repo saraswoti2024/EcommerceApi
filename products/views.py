@@ -240,3 +240,18 @@ class ProductReviewView(APIView):
             return Response(serializer.data)
 
     
+class ProductReviewReplyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self,request,pk):
+        try:
+            replies=ProductReview.objects.get(id=pk)
+        except ProductReview.DoesNotExist:
+            return Response({'error': 'No review like this '},status.HTTP_404_NOT_FOUND)
+        
+        serializer= ProductReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, reply=replies, product=replies.product)
+            return Response({"message": "victory to create reply ","reply_id":serializer.instance.id}, status.HTTP_201_CREATED
+                        )
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)

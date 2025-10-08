@@ -69,7 +69,7 @@ class ProductReview(models.Model):
     product= models.ForeignKey(Product,related_name='review',on_delete=models.CASCADE)
     comments = models.TextField()
     reviewed_date= models.DateTimeField(auto_now_add=True)
-    ratings = models.DecimalField(max_digits=6,decimal_places=1)
+    ratings = models.DecimalField(max_digits=6,decimal_places=1,null=True, blank=True)
     
     reply= models.ForeignKey('self', on_delete=models.CASCADE,null=True, blank=True, related_name='replies')
     
