@@ -52,11 +52,37 @@ class WishlistItem(models.Model):
     class Meta:
         unique_together = ("user", "product")
 
+# class ProductReview(models.Model):
+#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_review")
+#     product = models.ForeignKey(Product, on_delete=models.CASCADE,related_name="product_review")
+#     comments = models.TextField()
+#     ratings = models.DecimalField(max_digits=6,decimal_places=1)
+    
+#     class Meta:
+#         unique_together = ("user", "product")
+
+
+
+# Create your models here.
 class ProductReview(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_review")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE,related_name="product_review")
+    user=models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True, blank=True)
+    product= models.ForeignKey(Product,related_name='review',on_delete=models.CASCADE)
     comments = models.TextField()
+    reviewed_date= models.DateTimeField(auto_now_add=True)
     ratings = models.DecimalField(max_digits=6,decimal_places=1)
     
+    reply= models.ForeignKey('self', on_delete=models.CASCADE,null=True, blank=True, related_name='replies')
+    
+
+    def __str__(self):
+        return f"{self.user.first_name} - {self.comments[:20]}"
     class Meta:
-        unique_together = ("user", "product")
+         unique_together = ("user", "product")
+    
+class ReviewImage(models.Model):
+    review=models.ForeignKey(ProductReview, related_name='review_image',on_delete=models.CASCADE)
+    review_image = models.ImageField(upload_to='review_uploads/',blank=True,null=True)
+    created_date=models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for {self.review.comments[:10]} by {self.review.user}"

@@ -212,10 +212,10 @@ class Wishlist(APIView):
                 )
 
 class ProductReviewView(APIView):
-    def post(self,request):
+    def post(self,request,pk):
         try:
-            product_id = request.data.get('product_id')
-            productr = Product.objects.get(id=product_id)
+            # product_id = request.data.get('product_id')
+            productr = Product.objects.get(id=pk)
             serializer = ProductReviewSerializer(data = request.data)
             if serializer.is_valid():
                 serializer.save(user=request.user,product=productr)
@@ -225,15 +225,15 @@ class ProductReviewView(APIView):
         except Exception as e:
             return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
     
-    def get(self,request):           
-        product_id = request.data.get('product_id')
-        review = ProductReview.objects.filter(product__id=product_id)
+    def get(self,request,pk):           
+        # product_id = request.data.get('product_id')
+        review = ProductReview.objects.filter(product__id=pk)
         serializer = ProductReviewSerializer(review,many=True)
         return Response(serializer.data)
     
-    def patch(self,request):
-        product_id = request.data.get('product_id')
-        review = ProductReview.objects.get(product__id=product_id,user=request.user)       
+    def patch(self,request,pk):
+        # product_id = request.data.get('product_id')
+        review = ProductReview.objects.get(product__id=pk,user=request.user)       
         serializer = ProductReviewSerializer(review,data = request.data,partial=True)
         if serializer.is_valid():
             serializer.save()
