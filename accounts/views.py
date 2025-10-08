@@ -6,13 +6,16 @@ from .serializers import RegistrationSerializer,VerifySerializer,CustomTokenSeri
 from rest_framework import permissions,status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from accounts.emails import opt_email
+from .emails import opt_email
+from products.permissions import CustomBasePermission
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
 
+
 class RegisterView(APIView):
+    permission_classes = [CustomBasePermission]
     def post(self,request):
         try:
             serializers_class = RegistrationSerializer(data=request.data)
@@ -33,6 +36,7 @@ class RegisterView(APIView):
             return Response({'message_exception':f'{str(e)}'},status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyOtp(APIView):
+    permission_classes = [CustomBasePermission]
     def post(self, request):
         serializer = VerifySerializer(data=request.data)
         if serializer.is_valid():
@@ -61,11 +65,12 @@ class VerifyOtp(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CustomToken(TokenObtainPairView):
+    permission_classes = [CustomBasePermission]
     serializer_class = CustomTokenSerializer
 
 
 class Profile(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CustomBasePermission]
     def get(self,request):
         user_name = request.user.first_name
         return Response({'data': f'welcome {user_name}!'})

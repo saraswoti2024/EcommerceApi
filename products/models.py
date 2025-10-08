@@ -1,5 +1,6 @@
 from django.db import models
 from accounts.models import CustomUser
+from datetime import datetime
 
 class Category(models.Model):
     category_name = models.CharField(max_length=50)
@@ -57,6 +58,7 @@ class ProductReview(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE,related_name="product_review")
     comments = models.TextField()
     ratings = models.DecimalField(max_digits=6,decimal_places=1)
-    
+    created_at = models.DateTimeField(auto_now_add=True,blank=True,null=True)
+    updated = models.DateTimeField(auto_now=True,blank=True,null=True)
     class Meta:
         unique_together = ("user", "product")

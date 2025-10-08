@@ -8,9 +8,11 @@ from django.core.paginator import Paginator
 from rest_framework import permissions,status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-
+from products.permissions import CustomBasePermission
 
 class ProductView(APIView):
+    permission_classes = [CustomBasePermission]
+    print(permission_classes)
 
     #admin
     def post(self,request):
@@ -36,13 +38,13 @@ class ProductView(APIView):
 
                 if request.query_params.get('brand'):
                     brand = request.query_params.get('brand')
-                    data_brand = data.filter(brand=brand)
+                    data = data.filter(brand=brand)
                     total_products = data.filter(brand=brand).count()
                 
                 if request.query_params.get('rating'):
                     rate = request.query_params.get('rating')
-                    total_products = data_brand.filter(rating=rate).count()
-                    data = data_brand.filter(rating=rate)
+                    total_products = data.filter(rating=rate).count()
+                    data = data.filter(rating=rate)
 
                 page_number = request.GET.get('page', 1)
                 paginator_value = Paginator(data , 5)
@@ -57,6 +59,9 @@ class ProductView(APIView):
      
 
 class ProductViewDetail(APIView):
+    permission_classes = [CustomBasePermission]
+    print(permission_classes)
+
     def get(self,request,id):
         try:
             value = Product.objects.get(id=id)
@@ -67,9 +72,9 @@ class ProductViewDetail(APIView):
             else:
                 serializers = ProductSerializer(value)
             return Response(serializers.data,status = status.HTTP_200_OK)
+
         except Exception as e:
             return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
-
     #admin
     def patch(self,request,id):
         try: 
@@ -101,10 +106,11 @@ class ProductViewDetail(APIView):
             return Response({"status": "error", "message": "Item not in cart"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-                
+
 
 class Cart(APIView):
-    permission_classes = [IsAuthenticated] 
+    permission_classes  = [CustomBasePermission]
+    
     def post(self,request):
         product_id = request.data.get('product_id')
         quantity = int(request.data.get('quantity',1))
@@ -141,7 +147,7 @@ class Cart(APIView):
         }, status=status.HTTP_201_CREATED)       
 
 class RemoveCart(APIView):
-
+    permission_classes = [CustomBasePermission]
     def delete(self,request,id):
         product = get_object_or_404(Product,id=id)
         try:
@@ -162,6 +168,7 @@ class RemoveCart(APIView):
                 )
 
 class Wishlist(APIView):
+    permission_classes = [CustomBasePermission]
     def post(self,request):
         product_id = request.data.get('product_id')
         product = get_object_or_404(Product,id=product_id)
@@ -212,6 +219,7 @@ class Wishlist(APIView):
                 )
 
 class ProductReviewView(APIView):
+    permission_classes = [CustomBasePermission]
     def post(self,request):
         try:
             product_id = request.data.get('product_id')
@@ -227,7 +235,7 @@ class ProductReviewView(APIView):
     
     def get(self,request):           
         product_id = request.data.get('product_id')
-        review = ProductReview.objects.filter(product__id=product_id)
+        review = ProductReview.objects.filter(product__id=product_id).order_by('-updated')
         serializer = ProductReviewSerializer(review,many=True)
         return Response(serializer.data)
     
