@@ -1,5 +1,6 @@
 from django.db import models
 from accounts.models import CustomUser
+from datetime import datetime
 
 class Category(models.Model):
     category_name = models.CharField(max_length=50)
@@ -52,30 +53,13 @@ class WishlistItem(models.Model):
     class Meta:
         unique_together = ("user", "product")
 
-# class ProductReview(models.Model):
-#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_review")
-#     product = models.ForeignKey(Product, on_delete=models.CASCADE,related_name="product_review")
-#     comments = models.TextField()
-#     ratings = models.DecimalField(max_digits=6,decimal_places=1)
-    
-#     class Meta:
-#         unique_together = ("user", "product")
-
-
-
-# Create your models here.
 class ProductReview(models.Model):
-    user=models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True, blank=True)
-    product= models.ForeignKey(Product,related_name='review',on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="user_review")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE,related_name="product_review")
     comments = models.TextField()
-    reviewed_date= models.DateTimeField(auto_now_add=True)
-    ratings = models.DecimalField(max_digits=6,decimal_places=1,null=True, blank=True)
-    
-    reply= models.ForeignKey('self', on_delete=models.CASCADE,null=True, blank=True, related_name='replies')
-    
-
-    def __str__(self):
-        return f"{self.user.first_name} - {self.comments[:20]}"
+    ratings = models.DecimalField(max_digits=6,decimal_places=1)
+    created_at = models.DateTimeField(auto_now_add=True,blank=True,null=True)
+    updated = models.DateTimeField(auto_now=True,blank=True,null=True)
     class Meta:
          unique_together = ("user", "product")
     

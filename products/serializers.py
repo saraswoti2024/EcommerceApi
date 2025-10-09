@@ -78,3 +78,4 @@ class ProductReviewSerializer(serializers.ModelSerializer):
         if reply and rating is not None:
             raise serializers.ValidationError("Replies should not include ratings.")
         return data
+        # fields = ["id", "user", "product", "comments", "ratings", "created_at" , "updated"]

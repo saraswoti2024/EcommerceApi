@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import *
+from .views import RegisterView,VerifyOtp,Profile,CustomToken
 
 urlpatterns = [
     path('register/',RegisterView.as_view(),name="registerview"),
