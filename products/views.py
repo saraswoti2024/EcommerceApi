@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.generics import ListAPIView,CreateAPIView,RetrieveAPIView,UpdateAPIView,DestroyAPIView
-from .models import Product,CartItem,WishlistItem,ProductImage,ProductReview
-from .serializers import ProductSerializer,CartSerializer,WishSerializer,ProductImageSerializer,ProductReviewSerializer
+from .models import Product,CartItem,WishlistItem,ProductImage,ProductReview,Order,OrderProduct,BillingAddress,ShippingAddress
+from .serializers import ProductSerializer,CartSerializer,WishSerializer,ProductImageSerializer,ProductReviewSerializer,PaymentSerializer,OrderSerializer,BillingAddressSerializer,ShippingAddressSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.paginator import Paginator
@@ -47,7 +47,7 @@ class ProductView(APIView):
                     data = data.filter(rating=rate)
 
                 page_number = request.GET.get('page', 1)
-                paginator_value = Paginator(data , 5)
+                paginator_value = Paginator(data , 10)
                 serializers = ProductSerializer(paginator_value.page(page_number),many=True)
                 
                 return Response(
@@ -219,11 +219,12 @@ class Wishlist(APIView):
                 )
 
 class ProductReviewView(APIView):
-    permission_classes = [CustomBasePermission]
-    def post(self,request):
+    def post(self,request,pk):
+    # permission_classes = [CustomBasePermission]
+    # def post(self,request):
         try:
-            product_id = request.data.get('product_id')
-            productr = Product.objects.get(id=product_id)
+            # product_id = request.data.get('product_id')
+            productr = Product.objects.get(id=pk)
             serializer = ProductReviewSerializer(data = request.data)
             if serializer.is_valid():
                 serializer.save(user=request.user,product=productr)
@@ -233,18 +234,185 @@ class ProductReviewView(APIView):
         except Exception as e:
             return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
     
-    def get(self,request):           
-        product_id = request.data.get('product_id')
-        review = ProductReview.objects.filter(product__id=product_id).order_by('-updated')
+    def get(self,request,pk):           
+        # product_id = request.data.get('product_id')
+        review = ProductReview.objects.filter(product__id=pk).order_by('-updated')
+    # def get(self,request):           
+    #     product_id = request.data.get('product_id')
+    #     review = ProductReview.objects.filter(product__id=product_id).order_by('-updated')
         serializer = ProductReviewSerializer(review,many=True)
         return Response(serializer.data)
     
-    def patch(self,request):
-        product_id = request.data.get('product_id')
-        review = ProductReview.objects.get(product__id=product_id,user=request.user)       
+    def patch(self,request,pk):
+        # product_id = request.data.get('product_id')
+        review = ProductReview.objects.get(product__id=pk,user=request.user)       
         serializer = ProductReviewSerializer(review,data = request.data,partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
 
     
+class ProductReviewReplyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self,request,pk):
+        try:
+            replies=ProductReview.objects.get(id=pk)
+        except ProductReview.DoesNotExist:
+            return Response({'error': 'No review like this '},status.HTTP_404_NOT_FOUND)
+        
+        serializer= ProductReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, reply=replies, product=replies.product)
+            return Response({"message": "victory to create reply ","reply_id":serializer.instance.id}, status.HTTP_201_CREATED
+                        )
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class OrderProductView(APIView):
+    permission_classes = [CustomBasePermission]
+    print(permission_classes)
+
+    def get(self, request):
+        user = request.user
+        orders = Order.objects.filter(user=user).order_by('-order_date')
+        serializer = OrderSerializer(orders, many=True)
+        return Response({
+            "status": "success",
+            "total_orders": orders.count(),
+            "orders": serializer.data
+        }, status=status.HTTP_200_OK)
+    
+
+    def post(self,request):
+        user = request.user
+        no_of_cart_items_raw= request.data.get('no_of_cart_items',[])
+
+        if isinstance(no_of_cart_items_raw, str):
+            no_of_cart_items = [int(x) for x in no_of_cart_items_raw.split(',') if x.isdigit()]
+        else:
+            no_of_cart_items = no_of_cart_items_raw 
+
+        if not no_of_cart_items:
+            return Response({"error":"No items in cart is placed for order"},status= status.HTTP_400_BAD_REQUEST)
+
+        selected_cart_items= CartItem.objects.filter(user=user,id__in=no_of_cart_items)
+
+        if not selected_cart_items:
+            return Response({ "error":"no cart seleted for order "},status= status.HTTP_400_BAD_REQUEST)
+        
+        total_price = sum(item.product.price*item.quantity for item in selected_cart_items)
+        create_order= Order.objects.create(user=user, total_price= total_price)
+        # for item in 
+
+        for item in selected_cart_items:
+            OrderProduct.objects.create(
+                order=create_order,
+                product= item.product,
+                quantity= item.quantity,
+                price= item.product.price
+                )
+            item.product.stocks -= item.quantity
+            item.product.save()
+            
+        selected_cart_items.delete()
+
+        
+
+        return Response({
+            "message":"order created successfully",
+            "order_id": create_order.id,
+            "total_price": total_price
+        },status=status.HTTP_201_CREATED)
+
+
+class BillingAddressView(APIView):
+    permission_classes= [CustomBasePermission]
+
+    def post(self,request, pk):
+        try:
+            order = Order.objects.get(id=pk, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = BillingAddressSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, order=order)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self,request,pk):
+        try:
+            order = Order.objects.get(id=pk, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            billing_address = BillingAddress.objects.get(order=order)
+        except BillingAddress.DoesNotExist:
+            return Response({'error': 'Billing address not found for this order.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = BillingAddressSerializer(billing_address)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    
+class ShippingAddressView(APIView):
+    permission_classes= [CustomBasePermission]
+
+    def post(self,request, pk):
+        try:
+            order = Order.objects.get(id=pk, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ShippingAddressSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, order=order)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  
+
+    def get(self,request,pk):
+        try:
+            order = Order.objects.get(id=pk, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            shipping_address = ShippingAddress.objects.get(order=order)
+        except ShippingAddress.DoesNotExist:
+            return Response({'error': 'Shipping address not found for this order.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ShippingAddressSerializer(shipping_address)
+        return Response(serializer.data, status=status.HTTP_200_OK) 
+
+class PaymentView(APIView):
+    permission_classes=[CustomBasePermission]
+
+    def post(self,request,pk):
+        try:
+            order = Order.objects.et(id= pk,user=request.user)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = PaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(order=order, amount=order.total_price, status='Completed')
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class OrderCreateView(APIView):
+#     permission_classes = [CustomBasePermission]
+#     print(permission_classes)
+
+#     def post(self,request):
+#         try:
+#             serializers = OrderSerializer(data = request.data)
+#             if serializers.is_valid():
+#                     serializers.save(user=request.user)
+#                     return Response(serializers.data,status=status.HTTP_201_CREATED)
+#             else:
+#                 return Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
+#         except Exception as e:
+#             return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
+    
+   

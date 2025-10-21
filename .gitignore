@@ -1,1 +1,13 @@
 .env
+
+env/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Django media
+media/
+db.sqlite3
+
