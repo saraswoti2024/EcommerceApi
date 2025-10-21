@@ -26,8 +26,9 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG')
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['192.168.254.67',"http://localhost:5173","http://localhost:3000",'127.0.01:8000', ]
+CORS_ALLOW_ALL_ORIGINS = True
+ 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 # Application definition
@@ -45,9 +46,11 @@ INSTALLED_APPS = [
     'accounts',
     'message',
     'products',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -151,10 +154,10 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer"
     }
 }
-
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+# STATIC_URL = '/static/'
+# STATICFILES_DIRS = [
+#     BASE_DIR / "static",
+# ]
 
 #image configuration (to display)
 MEDIA_URL = '/mymedia/'

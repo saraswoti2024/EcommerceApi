@@ -79,3 +79,35 @@ class ProductReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Replies should not include ratings.")
         return data
         # fields = ["id", "user", "product", "comments", "ratings", "created_at" , "updated"]
+
+class OrderedItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderProduct
+        fields = ["id", "product", "quantity", "price"] 
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    order_items = OrderedItemSerializer(many=True)
+    user = serializers.StringRelatedField(read_only=True)
+    class Meta:
+        model = Order
+        fields = ["id", "user", "status", "order_date", "total_price", "order_items"]
+
+    
+class ShippingAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShippingAddress
+        fields = ["id", "user", "order", "address_line1", "address_line2", "city", "state", "postal_code", "country"]
+        read_only_fields = ["user", "order"]
+
+class BillingAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BillingAddress
+        fields = ["id", "user", "order", "address_line1", "address_line2", "city", "state", "postal_code", "country"]
+        read_only_fields = ["user", "order"]
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ["id", "order", "payment_method", "amount", "payment_date", "status"]
+        read_only_fields = ["order", "amount", "payment_date", "status"]

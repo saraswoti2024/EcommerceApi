@@ -5,12 +5,20 @@ ANONYMOUS_USER_WHITELIST = [
                         'productview',
                         'productviewdetail',
                         'productreviewview',
+                        "cart",
+                        'profile', 
+                        'orderproductview',
+                        'ordershippingview',
+                        'orderbillingview',
+                        
+                        
                         ]
 
 ANONYMOUS_LIST2 = [
     'registerview' ,
     'verifyotp',
     'token_obtain_pair',
+       
     ]
 
 class CustomBasePermission(DRFBasePermission):
@@ -21,10 +29,10 @@ class CustomBasePermission(DRFBasePermission):
             url_name = request.resolver_match.url_name #productdetailview urlname linxa not path
             print(url_name,method)  
 
-            # if url_name in ANONYMOUS_LIST2 and method == 'post' and user.is_anonymous or user.is_superuser:
-            #     return True
+            if url_name in ANONYMOUS_LIST2 and method == 'post' and user.is_anonymous or user.is_superuser:
+                return True
             
-            if url_name in ANONYMOUS_USER_WHITELIST and method == 'get':
+            if url_name in ANONYMOUS_USER_WHITELIST and method in ['get', 'post']:
                 return True
                
             elif request.user.is_anonymous: 
