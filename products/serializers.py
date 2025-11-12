@@ -106,8 +106,8 @@ class BillingAddressSerializer(serializers.ModelSerializer):
         fields = ["id", "user", "order", "address_line1", "address_line2", "city", "state", "postal_code", "country"]
         read_only_fields = ["user", "order"]
 
-class PaymentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Payment
-        fields = ["id", "order", "payment_method", "amount", "payment_date", "status"]
-        read_only_fields = ["order", "amount", "payment_date", "status"]
+# class PaymentSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Payment
+#         fields = ["id", "order", "payment_method", "amount", "payment_date", "status"]
+#         read_only_fields = ["order", "amount", "payment_date", "status"]

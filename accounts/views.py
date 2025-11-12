@@ -14,6 +14,8 @@ from rest_framework_simplejwt.views import (
 )
 
 
+
+
 class RegisterView(APIView):
     permission_classes = [CustomBasePermission]
     def post(self,request):
@@ -75,3 +77,4 @@ class Profile(APIView):
         user_name = request.user.first_name
         return Response({'data': f'welcome {user_name}!'})
     
+

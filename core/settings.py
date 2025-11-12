@@ -22,11 +22,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
+ESEWA_SECRET_KEY = config('ESEWA_SECRET_KEY')
+MERCHANT_PRODUCT_CODE_ESEWA= config('MERCHANT_PRODUCT_CODE_ESEWA')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG')
 
-ALLOWED_HOSTS = ['192.168.254.67',"http://localhost:5173","http://localhost:3000",'127.0.01:8000', ]
+ALLOWED_HOSTS = [
+    # '192.168.254.67',
+    # "http://localhost:5173",
+    # "http://localhost:3000", 
+    
+    
+    ]
 CORS_ALLOW_ALL_ORIGINS = True
  
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -65,7 +73,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ProductView,ProductViewDetail,Cart,RemoveCart,Wishlist,ProductReviewView,ProductReviewReplyView,OrderProductView,ShippingAddressView,BillingAddressView
+from .views import ProductView,ProductViewDetail,Cart,RemoveCart,Wishlist,ProductReviewView,ProductReviewReplyView,OrderProductView,ShippingAddressView,BillingAddressView,CheckoutView,EsewaSuccessView,EsewaFailureView
 
 urlpatterns = [
     path('product/',ProductView.as_view(),name="productview"),
@@ -13,6 +13,10 @@ urlpatterns = [
     path('order/',OrderProductView.as_view(),name="orderproductview"),
     path('order/shipping/<int:pk>/',ShippingAddressView.as_view(),name="ordershippingview"),
     path('order/billing/<int:pk>/',BillingAddressView.as_view(),name="orderbillingview"),
+    path('order/checkout/esewa/<int:id>/',CheckoutView.as_view(),name ="order_checkout"),
+    path('order/checkout/esewa/success/', EsewaSuccessView.as_view(), name='payment_success_esewa'),
+    path('order/checkout/esewa/failure/', EsewaFailureView.as_view(), name='payment_failure_esewa'),
+
    
     
     
