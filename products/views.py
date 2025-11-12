@@ -1,14 +1,21 @@
 from django.shortcuts import render
 from rest_framework.generics import ListAPIView,CreateAPIView,RetrieveAPIView,UpdateAPIView,DestroyAPIView
-from .models import Product,CartItem,WishlistItem,ProductImage,ProductReview,Order,OrderProduct,BillingAddress,ShippingAddress
-from .serializers import ProductSerializer,CartSerializer,WishSerializer,ProductImageSerializer,ProductReviewSerializer,PaymentSerializer,OrderSerializer,BillingAddressSerializer,ShippingAddressSerializer
-from rest_framework.views import APIView
+from .models import Product,CartItem,WishlistItem,ProductImage,ProductReview,Order,OrderProduct,BillingAddress,ShippingAddress, PaymentESewa,PaymentStatus
+from .serializers import ProductSerializer,CartSerializer,WishSerializer,ProductImageSerializer,ProductReviewSerializer,OrderSerializer,BillingAddressSerializer,ShippingAddressSerializer
+from rest_framework.views import APIView,View
 from rest_framework.response import Response
 from django.core.paginator import Paginator
 from rest_framework import permissions,status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from products.permissions import CustomBasePermission
+from decimal import Decimal
+import uuid,base64, hmac, hashlib, json, requests
+from django.urls import reverse
+from decouple import config
+esewa_secret_key = config('ESEWA_SECRET_KEY')
+esewa_merchant_product_code = config('MERCHANT_PRODUCT_CODE_ESEWA')
+
 
 class ProductView(APIView):
     permission_classes = [CustomBasePermission]
@@ -386,19 +393,135 @@ class ShippingAddressView(APIView):
         serializer = ShippingAddressSerializer(shipping_address)
         return Response(serializer.data, status=status.HTTP_200_OK) 
 
-class PaymentView(APIView):
+def generate_signature(key,message):
+        key=key.encode('utf-8')
+        message = message.encode('utf-8')
+        hmac_sha256 = hmac.new(key,message, hashlib.sha256)
+        digest= hmac_sha256.digest()
+        signature= base64.b64encode(digest).decode('utf-8')
+        # print(signature)
+        return signature
+
+class CheckoutView(View):
     permission_classes=[CustomBasePermission]
 
-    def post(self,request,pk):
-        try:
-            order = Order.objects.et(id= pk,user=request.user)
-        except Order.DoesNotExist:
-            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = PaymentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(order=order, amount=order.total_price, status='Completed')
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    def get(self,request,id):
+        order_product= Order.objects.get(id=id)
+        
+        # product= OrderProduct.objects.all().filter(id=id) 
+        # product_code= product.product.code   
+        # print(product_code)
+        
+        #tax_price = tax amount + total price
+
+        tax_amount= ((order_product.total_price) * Decimal('0.13'))
+        total_with_tax_price = tax_amount+ order_product.total_price
+        print(total_with_tax_price)
+
+        transaction_uuid= uuid.uuid4()
+        secret_key = esewa_secret_key
+        data_to_sign = f"total_amount={total_with_tax_price},transaction_uuid={transaction_uuid},product_code={esewa_merchant_product_code}"
+        result = generate_signature(secret_key,data_to_sign)
+        # print(result)
+        success_url = request.build_absolute_uri(reverse('payment_success_esewa'))        
+        failure_url = request.build_absolute_uri(reverse('payment_failure_esewa'))
+
+        context = {
+            'order_product':order_product   ,
+            'order_amount':order_product.total_price,
+            'tax_amount':tax_amount,
+            'total_amount':total_with_tax_price,
+            'transaction_uuid':transaction_uuid,
+            'product_delivery_charge':0,    
+            'product_delivery_charge':0,
+            'success_url_esewa':success_url,
+            'failure_url_esewa':failure_url,
+            'signature':result,
+
+        }
+        #PaymentStatus.objects.create(user=request.user,order=order_product,amount=total_with_tax_price,payment_method='E_wallet')
+        # if payment_uuid is None:
+        #     payment_uuid == transaction_uuid
+
+        
+        return render(request,'esewa.html',context)
+    
+
+    
+
+class EsewaSuccessView(View):
+    def get(self,request):
+        # order_product= Order.objects.get(id=id)
+        context={}  # Create a dictionary to store the response
+        data = request.GET.get('data')  # Get the data from the URL
+        # print(data)
+        decoded_data = base64.b64decode(data).decode('utf-8')   # Decode the data
+        data_dict = json.loads(decoded_data)    # Convert the data to a dictionary
+        # Get the values from the dictionary
+        total_amount = data_dict['total_amount'] 
+        transaction_uuid = data_dict['transaction_uuid']
+        product_code = data_dict['product_code']
+    
+        # Make a request to the eSewa API to get the transaction status
+        request_url = f'https://rc.esewa.com.np/api/epay/transaction/status/?product_code={product_code}&total_amount={total_amount}&transaction_uuid={transaction_uuid}'
+        response = requests.get(request_url) 
+        # print(response)
+        response = json.loads(response.text)
+        # print(response)
+        status = response.get('status')
+        # print(status)
+        ref_id=response.get('ref_id')
+        # print(ref_id)
+        user = request.user if request.user.is_authenticated else None
+    # {'product_code': 'EPAYTEST', 'transaction_uuid': '02d39d09-d518-40a9-9ac1-6a5a5487fa03', 'total_amount': 1010.0, 'status': 'COMPLETE', 'ref_id': '000CW9X'}
+        
+        PaymentESewa.objects.create(user=request.user,transaction_uuid=transaction_uuid,product_code=product_code,total_amount=total_amount,status=status,ref_id=ref_id,)
+
+       
+
+        
+
+        
+
+        # CartItem.objects.filter(user=request.user).delete()
+
+        # Put the Status in message key of the context dictionary
+        context['message'] = response['status']
+        # print(context)
+        
+
+        return render(request, 'esewa_success.html',context )
+    
+    # def patch(request,id):
+    #     order_product=
+    
+
+class EsewaFailureView(View):
+    def get(self, request):
+        return render(request, 'esewa_failure.html')
+
+
+
+
+
+        
+
+
+# class PaymentView(APIView):
+#     permission_classes=[CustomBasePermission]
+
+#     def post(self,request,pk):
+#         try:
+#             order = Order.objects.et(id= pk,user=request.user)
+#         except Order.DoesNotExist:
+#             return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+#         serializer = PaymentSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save(order=order, amount=order.total_price, status='Completed')
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class OrderCreateView(APIView):
 #     permission_classes = [CustomBasePermission]
@@ -413,6 +536,5 @@ class PaymentView(APIView):
 #             else:
 #                 return Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
 #         except Exception as e:
-#             return Response(str(e),status=status.HTTP_400_BAD_REQUEST)
+#             return Response(str(e),status=status.HTTP_400_BAD_REQUEST) 
     
-   

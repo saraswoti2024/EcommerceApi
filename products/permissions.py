@@ -10,6 +10,7 @@ ANONYMOUS_USER_WHITELIST = [
                         'orderproductview',
                         'ordershippingview',
                         'orderbillingview',
+                        'order_checkout',
                         
                         
                         ]
